@@ -185,9 +185,9 @@ window.onload = function(){
         function feed()
         {
             ctx.beginPath();
-            var redColor = Math.round(Math.random(255));
-            var greenColor = Math.round(Math.random(255));
-            var blueColor = Math.round(Math.random(255));
+            var redColor = Math.round(Math.random()*255);
+            var greenColor = Math.round(Math.random()*255);
+            var blueColor = Math.round(Math.random()*255);
             
             ctx.fillStyle = rgb(redColor, greenColor, blueColor);
             ctx.fillRect(food[0],food[1],10,10);
