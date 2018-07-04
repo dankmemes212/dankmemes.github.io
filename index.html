@@ -70,8 +70,8 @@ window.onload = function(){
             }
             else
             {
-                canvas.width=850;
-                canvas.height=600;
+                canvas.width=900;
+                canvas.height=650;
                 control.style.display='inline';
             }
         }
@@ -132,7 +132,7 @@ window.onload = function(){
             feed();
             if(is_catched(pos[0][0]*block,pos[0][1]*block,block,block,food[0],food[1],10,10))
             {
-                score += 10;
+                score += 20;
                 createfood();
                 scoreboard.innerHTML = score;
                 grow();
