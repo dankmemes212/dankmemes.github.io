@@ -1,208 +1,302 @@
-import java.awt.Color;
-
-import javax.swing.JFrame;
-
-public class Pong extends JFrame {
-    private final static int WIDTH = 700, HEIGHT = 450;
-    private PongPanel panel;
-
-    public Pong() {
-        setSize(WIDTH, HEIGHT);
-        setTitle("Pong");
-        setBackground(Color.WHITE);
-        setResizable(false);
-        setVisible(true);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        panel = new PongPanel(this);
-        add(panel);
-    }
-
-    public PongPanel getPanel() {
-        return panel;
-    }
-
-    public static void main(String[] args) {
-        new Pong();
-    }
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Feed the Snake v 1.1 beta</title>
+<style>
+body
+{
+    background:#000;
+    color:#FFF;
 }
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-
-import javax.swing.JPanel;
-import javax.swing.Timer;
-
-public class PongPanel extends JPanel implements ActionListener, KeyListener {
-    private Pong game;
-    private Ball ball;
-    private Racket player1, player2;
-    private int score1, score2;
-
-    public PongPanel(Pong game) {
-        setBackground(Color.WHITE);
-        this.game = game;
-        ball = new Ball(game);
-        player1 = new Racket(game, KeyEvent.VK_UP, KeyEvent.VK_DOWN, game.getWidth() - 36);
-        player2 = new Racket(game, KeyEvent.VK_W, KeyEvent.VK_S, 20);
-        Timer timer = new Timer(5, this);
-        timer.start();
-        addKeyListener(this);
-        setFocusable(true);
-    }
-
-    public Racket getPlayer(int playerNo) {
-        if (playerNo == 1)
-            return player1;
-        else
-            return player2;
-    }
-
-    public void increaseScore(int playerNo) {
-        if (playerNo == 1)
-            score1++;
-        else
-            score2++;
-    }
-
-    public int getScore(int playerNo) {
-        if (playerNo == 1)
-            return score1;
-        else
-            return score2;
-    }
-
-    private void update() {
-        ball.update();
-        player1.update();
-        player2.update();
-    }
-
-    public void actionPerformed(ActionEvent e) {
-        update();
-        repaint();
-    }
-
-    public void keyPressed(KeyEvent e) {
-        player1.pressed(e.getKeyCode());
-        player2.pressed(e.getKeyCode());
-    }
-
-    public void keyReleased(KeyEvent e) {
-        player1.released(e.getKeyCode());
-        player2.released(e.getKeyCode());
-    }
-
-    public void keyTyped(KeyEvent e) {
-        ;
-    }
-
-    @Override
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        g.drawString(game.getPanel().getScore(1) + " : " + game.getPanel().getScore(2), game.getWidth() / 2, 10);
-        ball.paint(g);
-        player1.paint(g);
-        player2.paint(g);
-    }
+canvas
+{
+    background:#FFF;
 }
-import java.awt.Graphics;
-import java.awt.Rectangle;
+#controls
+{
+    position:absolute;
+    top:0;
+    right:0;
+    margin:10px;
+}
+</style>
+<script type="text/javascript">
+var snake = window.snake || {};
+function launchFullscreen(element) {
+  if(element.requestFullscreen) {
+    element.requestFullscreen();
+  } else if(element.mozRequestFullScreen) {
+    element.mozRequestFullScreen();
+  } else if(element.webkitRequestFullscreen) {
+    element.webkitRequestFullscreen();
+  } else if(element.msRequestFullscreen) {
+    element.msRequestFullscreen();
+  }
+}
+window.onload = function(){
+    document.addEventListener("fullscreenchange", function(){snake.game.adjust();});
+    document.addEventListener("webkitfullscreenchange", function(){snake.game.adjust();});
+    document.addEventListener("mozfullscreenchange", function(){snake.game.adjust();});
+    document.addEventListener("MSFullscreenChange", function(){snake.game.adjust();});
 
-import javax.swing.JOptionPane;
-
-public class Ball {
-    private static final int WIDTH = 30, HEIGHT = 30;
-    private Pong game;
-    private int x, y, xa = 2, ya = 2;
-
-    public Ball(Pong game) {
-        this.game = game;
-        x = game.getWidth() / 2;
-        y = game.getHeight() / 2;
-    }
-
-    public void update() {
-        x += xa;
-        y += ya;
-        if (x < 0) {
-            game.getPanel().increaseScore(1);
-            x = game.getWidth() / 2;
-            xa = -xa;
+    snake.game = (function()
+    {
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');
+        var status=false;
+        var score = 0;
+        var old_direction = 'right';
+        var direction = 'right';
+        var block = 10;
+        var score = 0;
+        var refresh_rate = 250;
+        var pos = [[5,1],[4,1],[3,1],[2,1],[1,1]];
+        var scoreboard = document.getElementById('scoreboard');
+        var control = document.getElementById('controls');
+        var keys = {
+            37 : 'left',
+            38 : 'up',
+            39 : 'right',
+            40 : 'down'
+            };
+        function adjust()
+        {
+            if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement )
+            {
+                canvas.width=window.innerWidth;
+                canvas.height=window.innerHeight;
+                control.style.display='none';
+            }
+            else
+            {
+                canvas.width=850;
+                canvas.height=600;
+                control.style.display='inline';
+            }
         }
-        else if (x > game.getWidth() - WIDTH - 7) {
-            game.getPanel().increaseScore(2);
-            x = game.getWidth() / 2;
-            xa = -xa;
+        var food = [Math.round(Math.random(4)*(canvas.width - 10)), Math.round(Math.random(4)*(canvas.height - 10)),];
+        function todraw()
+        {
+            for(var i = 0; i < pos.length; i++)
+            {
+                draw(pos[i]);
+            }
         }
-        else if (y < 0 || y > game.getHeight() - HEIGHT - 29)
-            ya = -ya;
-        if (game.getPanel().getScore(1) == 10)
-            JOptionPane.showMessageDialog(null, "Player 1 wins", "Pong", JOptionPane.PLAIN_MESSAGE);
-        else if (game.getPanel().getScore(2) == 10)
-            JOptionPane.showMessageDialog(null, "Player 2 wins", "Pong", JOptionPane.PLAIN_MESSAGE);
-        checkCollision();
-    }
+        function giveLife()
+        {
+            var nextPosition = pos[0].slice();
+            switch(old_direction)
+            {
+                case 'right':
+                    nextPosition[0] += 1;
+                    break;
+                case 'left':
+                    nextPosition[0] -= 1;
+                    break;
+                case 'up':
+                    nextPosition[1] -= 1;
+                    break;
+                case 'down':
+                    nextPosition[1] += 1;
+                    break;    
+            }
+            pos.unshift(nextPosition);
+            pos.pop();
+        }
+        function grow()
+        {
+            var nextPosition = pos[0].slice();
+            switch(old_direction)
+            {
+                case 'right':
+                    nextPosition[0] += 1;
+                    break;
+                case 'left':
+                    nextPosition[0] -= 1;
+                    break;
+                case 'up':
+                    nextPosition[1] -= 1;
+                    break;
+                case 'down':
+                    nextPosition[1] += 1;
+                    break;    
+            }
+            pos.unshift(nextPosition);
+        }
+        function loop()
+        {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            todraw();
+            giveLife();
+            feed();
+            if(is_catched(pos[0][0]*block,pos[0][1]*block,block,block,food[0],food[1],10,10))
+            {
+                score += 10;
+                createfood();
+                scoreboard.innerHTML = score;
+                grow();
+                if(refresh_rate > 100)
+                {
+                    refresh_rate -=5;
+                }
+            }
+            snake.game.status = setTimeout(function() { loop(); },refresh_rate);
+        }
+        window.onkeydown = function(event){
+             direction = keys[event.keyCode];
+                if(direction)
+                {
+                    setWay(direction);
+                    event.preventDefault();
+                }
+            };
+        function setWay(direction)
+        {
+            switch(direction)
+            {
+                case 'left':
+                    if(old_direction!='right')
+                    {
+                        old_direction = direction;
+                    }
+                    break;
+                case 'right':
+                    if(old_direction!='left')
+                    {
+                        old_direction = direction;
+                    }
+                    break;
+                case 'up':
+                    if(old_direction!='down')
+                    {
+                        old_direction = direction;
+                    }
+                    break;
+                case 'down':
+                    if(old_direction!='up')
+                    {
+                        old_direction = direction;
+                    }
+                    break;
+            }
 
-    public void checkCollision() {
-        if (game.getPanel().getPlayer(1).getBounds().intersects(getBounds()) || game.getPanel().getPlayer(2).getBounds().intersects(getBounds()))
-            xa = -xa;
-    }
-
-    public Rectangle getBounds() {
-        return new Rectangle(x, y, WIDTH, HEIGHT);
-    }
-
-    public void paint(Graphics g) {
-        g.fillRect(x, y, WIDTH, HEIGHT);
-    }
+        }
+        function feed()
+        {
+            ctx.beginPath();
+            ctx.fillStyle = "#ff0000";
+            ctx.fillRect(food[0],food[1],10,10);
+            ctx.fill();
+            ctx.closePath();
+        }
+        function createfood()
+        {
+            food = [Math.round(Math.random(4)*850), Math.round(Math.random(4)*600)];
+        }
+        function is_catched(ax,ay,awidth,aheight,bx,by,bwidth,bheight) {
+            return !(
+            ((ay + aheight) < (by)) ||
+            (ay > (by + bheight)) ||
+            ((ax + awidth) < bx) ||
+            (ax > (bx + bwidth))
+            );
+        }
+        function draw(pos)
+        {
+            var x = pos[0] * block;
+            var y = pos[1] * block;
+            if(x >= canvas.width || x <= 0 || y >= canvas.height || y<= 0)
+            {
+                    document.getElementById('pause').disabled='true';
+                    snake.game.status=false;
+                    ctx.clearRect(0,0,canvas.width,canvas.height);
+                    ctx.font='40px san-serif';
+                    ctx.fillText('Game Over',300,250);
+                    ctx.font = '20px san-serif';
+                    ctx.fillStyle='#000000';
+                    ctx.fillText('To Play again Refresh the page or click the Restarts button',200,300);
+                    throw ('Game Over');
+            }
+            else
+            {
+                ctx.beginPath();
+                ctx.fillStyle='#000000';
+                ctx.fillRect(x,y,block,block);
+                ctx.closePath();
+            }
+        }
+        function pause(elem)
+        {
+            if(snake.game.status)
+            {
+                clearTimeout(snake.game.status);
+                snake.game.status=false;
+                elem.value='Play'
+            }
+            else
+            {
+                loop();
+                elem.value='Pause';
+            }
+        }
+        function begin()
+        {
+            loop();
+        }
+        function restart()
+        {
+            location.reload();
+        }
+        function start()
+        {
+            ctx.fillStyle='#000000';
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle='#ffffff';
+            ctx.font='40px helvatica';
+            ctx.fillText('Vignesh',370,140);
+            ctx.font='20px san-serif';
+            ctx.fillText('presents',395,190);
+            ctx.font='italic 60px san-serif';
+            ctx.fillText('Feed The Snake',240,280);
+            var img = new Image();
+            img.onload = function()
+            {
+                ctx.drawImage(img,300,300,200,200);
+                ctx.fillRect(410,330,10,10);
+            }
+            img.src ='snake.png';
+        }
+        function fullscreen()
+        {
+            launchFullscreen(canvas);
+        }
+        return {
+            pause: pause,
+            restart : restart,
+            start : start,
+            begin: begin,
+            fullscreen : fullscreen,
+            adjust : adjust,
+        };
+    })();
+    snake.game.start();
 }
-              import java.awt.Graphics;
-import java.awt.Rectangle;
-
-public class Racket {
-    private static final int WIDTH = 10, HEIGHT = 60;
-    private Pong game;
-    private int up, down;
-    private int x;
-    private int y, ya;
-
-    public Racket(Pong game, int up, int down, int x) {
-        this.game = game;
-        this.x = x;
-        y = game.getHeight() / 2;
-        this.up = up;
-        this.down = down;
-    }
-
-    public void update() {
-        if (y > 0 && y < game.getHeight() - HEIGHT - 29)
-            y += ya;
-        else if (y == 0)
-            y++;
-        else if (y == game.getHeight() - HEIGHT - 29)
-            y--;
-    }
-
-    public void pressed(int keyCode) {
-        if (keyCode == up)
-            ya = -1;
-        else if (keyCode == down)
-            ya = 1;
-    }
-
-    public void released(int keyCode) {
-        if (keyCode == up || keyCode == down)
-            ya = 0;
-    }
-
-    public Rectangle getBounds() {
-        return new Rectangle(x, y, WIDTH, HEIGHT);
-    }
-
-    public void paint(Graphics g) {
-        g.fillRect(x, y, WIDTH, HEIGHT);
-    }
-}
+</script>
+</head>
+<body>
+<canvas width="850" height="600" id="canvas" style="border:1px solid #333;" onclick="snake.game.begin();">
+</canvas>
+<div id="controls" style="float:right; text-align:center;">
+    <input type="button" id="pause" value="Play" onClick="snake.game.pause(this);" accesskey="p">
+    <input type="button" id="restart" value="Restart" onClick="snake.game.restart();">
+    <br/><br/>
+    <input type="button" id="fullscreen" value="Play Fullscreen" onClick="snake.game.fullscreen();">
+    <br/><br/>
+    <div style="font-size:24px;">
+    Score : 
+    <span id="scoreboard">0</span>
+    </div>
+</div>
+</body>
+</html>
