@@ -76,6 +76,8 @@ window.onload = function(){
             }
         }
         var food = [Math.round(Math.random(4)*(canvas.width - 10)), Math.round(Math.random(4)*(canvas.height - 10)),];
+        var foodColor = [255, 0, 0]
+
         function todraw()
         {
             for(var i = 0; i < pos.length; i++)
@@ -185,7 +187,8 @@ window.onload = function(){
         function feed()
         {
             ctx.beginPath();
-            ctx.fillStyle = "#ff0000";
+            //ctx.fillStyle = "#ff0000";
+            ctx.fillStyle = rgb(foodColor[0], foodColor[1], foodColor[2]);
             ctx.fillRect(food[0],food[1],10,10);
             ctx.fill();
             ctx.closePath();
@@ -193,6 +196,13 @@ window.onload = function(){
         function createfood()
         {
             food = [Math.round(Math.random(4)*850), Math.round(Math.random(4)*600)];
+            
+            var redRgb = Math.round(Math.random()*255)
+            var greenRgb = Math.round(Math.random()*255)
+            var blueRgb = Math.round(Math.random()*255)
+            
+            foodColor = [redRgb, greenRgb, blueRgb]
+            
         }
         function is_catched(ax,ay,awidth,aheight,bx,by,bwidth,bheight) {
             return !(
