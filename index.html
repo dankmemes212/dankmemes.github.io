@@ -189,6 +189,7 @@ window.onload = function(){
             ctx.beginPath();
             //ctx.fillStyle = "#ff0000";
             ctx.fillStyle = "#"+(foodColor[0]).toString(16)+(foodColor[1]).toString(16)+(foodColor[2]).toString(16);
+            Console.log("#"+(foodColor[0]).toString(16)+(foodColor[1]).toString(16)+(foodColor[2]).toString(16));
             ctx.fillRect(food[0],food[1],10,10);
             ctx.fill();
             ctx.closePath();
